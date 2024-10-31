@@ -1,4 +1,4 @@
-#!/usr/bib/env python3
+#!/usr/bin/env python3
 """
 a class LIFOCache that inherits from BaseCaching
 and is a caching system:
@@ -22,7 +22,7 @@ return None.
 """
 
 
-BaseCaching = __import__('0-basic_cache').BaseCaching
+BaseCaching = __import__('base_caching').BaseCaching
 
 
 class LIFOCache(BaseCaching):
@@ -45,7 +45,7 @@ class LIFOCache(BaseCaching):
         if key is None or item is None:
             pass
         else:
-            if len(self.cache_data.keys()) >= BaseCaching.MAX_ITEMS\
+            if len(self.cache_data) >= BaseCaching.MAX_ITEMS\
                     and key not in self.cache_data.keys():
                 # Delete the last item of the disctionary
                 last_key, last_value = self.cache_data.popitem()
@@ -57,7 +57,7 @@ class LIFOCache(BaseCaching):
         If key is None or key is not in self.cache_date.keys()
         it returns None otherwise it returns the key
         """
-        if key is None or key not in self.cache_date.keys():
+        if key is None or key not in self.cache_data.keys():
             return None
         else:
             return self.cache_data.get(key)
