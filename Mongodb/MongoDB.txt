@@ -1,0 +1,74 @@
+// Part 1: Count Documents
+// load the document 
+load("customerTransactions.js")
+
+db.product.count();
+db.customer.count();
+db.transactions.count();
+db.transaction_contains.count();
+
+// Count total number of transactions
+db.customer.aggregate([
+  { $unwind: "$transaction" },
+  { $group: { _id: null, transaction_count: { $sum: 1 } } }
+]);
+
+// Count total number of items in transaction_contains
+db.customer.aggregate([
+  { $unwind: "$transaction" },
+  { $unwind: "$transaction.transaction_contains" },
+  { $group: { _id: null, items_count: { $sum: 1 } } }
+]);
+
+// Part 2: Queries (10 points each)
+// 1. Find the UPCs of all alcoholic beverages (category = 'Alcohol'):
+db.product.find({ category: "Alcohol" }, { upc: 1, _id: 0 });
+
+// 2. Customer ID of the customer who makes transaction 104
+db.customer.find({ "transaction.transaction_ID": "104" }, { customer_ID: 1, _id: 0 });
+
+// 3. How many customers made their first transaction with total < $50?
+db.customer.aggregate([
+  { $project: {
+      customer_ID: 1,
+      first_transaction: { $arrayElemAt: ["$transaction", 0] }
+  }},
+  { $match: { "first_transaction.total": { $lt: 50 } } },
+  { $count: "low_spending_first_timers" }
+]);
+
+// 4. Name of product(s) missing product_Description field
+db.product.find({ product_Description: { $exists: false } }, { product_name: 1, _id: 0 });
+
+// 5. Number of products whose brand is 'Pepsi' or 'Coca-Cola'
+db.product.count({ brand: { $in: ["Pepsi", "Coca-Cola"] } });
+
+// 6. Name of each product cheaper than $10 and quantity at least 50
+db.product.find(
+  { marked_price: { $lt: 10 }, quantity: { $gte: 50 } },
+  { product_name: 1, _id: 0 }
+);
+
+// 7. How many customers haven’t made any transactions?
+db.customer.count({
+  $or: [
+    { transaction: { $exists: false } },
+    { transaction: { $size: 0 } }
+  ]
+});
+
+
+// 8. Find all transactions (transaction_IDs) that contain alcoholic beverages
+// Step 1: Get the list of alcoholic beverage UPCs
+var alcoholUpcs = db.product.find({ category: "Alcohol" }).toArray().map(function(p) {
+  return p.upc;
+});
+
+// Step 2: Use that list in an aggregation to find transaction_IDs
+db.customer.aggregate([
+  { $unwind: "$transaction" },
+  { $unwind: "$transaction.transaction_contains" },
+  { $match: { "transaction.transaction_contains.upc": { $in: alcoholUpcs } } },
+  { $group: { _id: "$transaction.transaction_ID" } }
+]);
+
